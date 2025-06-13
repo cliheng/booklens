@@ -1,5 +1,6 @@
 import streamlit as st
 import graphrag_data_builder as gdb
+import graphrag_talk as gt
 
 def main():
     # 标题
@@ -21,20 +22,21 @@ def main():
             if response: 
                 if not db_name:  # 如果用户没有输入数据库名
                     st.warning("请输入数据库名！")
-                if uploaded_file is not None:  # 如果用户点击了按钮并且上传了文件
-                    result = gdb.create_database(db_name)  # 创建数据库
-                    if result:  # 如果数据库创建成功
-                        st.success(f"数据库 {db_name} 创建成功！")
-                        pdf_path = gdb.parse_pdf(uploaded_file.name)
-                        docs = gdb.document_splitter(pdf_path)
-                        graph_docs = gdb.extract_entities(docs)
-                        gdb.store_in_neo4j(graph_docs, db_name)
-                        st.success("文件上传成功！")
-                        st.session_state.databases = gdb.search_database()  # 更新数据库列表
-                    else:  # 如果数据库创建失败
-                        st.error(f"数据库 {db_name} 创建失败！")
-                else:  # 如果用户没有上传文件
-                    st.warning("请上传pdf文件！")
+                else:
+                    if uploaded_file is not None:  # 如果用户点击了按钮并且上传了文件
+                        result = gdb.create_database(db_name)  # 创建数据库
+                        if result:  # 如果数据库创建成功
+                            st.success(f"数据库 {db_name} 创建成功！")
+                            pdf_path = gdb.parse_pdf(uploaded_file)
+                            docs = gdb.document_splitter(pdf_path)
+                            graph_docs = gdb.extract_entities(docs)
+                            gdb.store_in_neo4j(graph_docs, db_name)
+                            st.success("文件上传成功！")
+                            st.session_state.databases = gdb.search_database()  # 更新数据库列表
+                        else:  # 如果数据库创建失败
+                            st.error(f"数据库 {db_name} 创建失败！")
+                    else:  # 如果用户没有上传文件
+                        st.warning("请上传pdf文件！")
         with col2:
             response = st.button("重置 Graph")
         
@@ -49,19 +51,24 @@ def main():
     # 实现聊天功能
     question = st.chat_input("输入问题提问....")  # 创建一个聊天输入框，返回用户输入的问题
 
-    chat_history = [
-        ('AI', '你好，我是 GraphRAG 智能助手。请上传 PDF 文件以开始。'),
-        ('Human', '你好, 我想知道这个文件的内容。'),
-        ('AI', '请上传文件以便我可以帮助你。')]
-    for chat in chat_history:
-        role, content = chat
-        with st.chat_message(role):
-            st.write(content)
+    if question is not None and question != "":
+        resp = gt.create_response(question)
+        st.session_state.chat_history.append(('Human', question))
+        st.session_state.chat_history.append(('AI', resp))
+
+        chat_history = st.session_state.chat_history
+        for chat in chat_history:
+            role, content = chat
+            with st.chat_message(role):
+                st.write(content)
 
 if __name__ == '__main__':
 
     # 查询所有数据库
     if 'databases' not in st.session_state:  # 如果会话状态中没有数据库列表
         st.session_state.databases = gdb.search_database()  # 查询数据库列表并存储在会话状态中
+
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = [] # 初始化聊天历史
 
     main()

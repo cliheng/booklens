@@ -7,10 +7,17 @@ from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_community.graphs import Neo4jGraph  # 用来操作 Neo4j 图数据库的类
 from dotenv import find_dotenv, load_dotenv  # 用来加载环境变量的库
 import os
+import tempfile
 
 load_dotenv(find_dotenv())
 
-def parse_pdf(pdf_path):
+def parse_pdf(upload_pdf):
+
+    # 使用临时文件方式保存
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        temp_file.write(upload_pdf.getbuffer())
+        pdf_path = temp_file.name
+
     # 加载pdf文件
     loader = PDFMinerLoader(pdf_path)
     document = loader.load()
