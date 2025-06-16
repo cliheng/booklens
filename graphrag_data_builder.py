@@ -56,7 +56,7 @@ def extract_entities(docs):
         再次强调：使用中文来表达实体、关系等信息，不要使用不具备意义的数字或者英文单词。
     """
         # 初始化LLM模型 
-        llm = ChatOpenAI(model="gpt-4o-mini", 
+        llm = ChatOpenAI(model=os.environ['chat_model'], #model="gpt-4o-mini", 
                         api_key=os.environ['api_key'], 
                         base_url=os.environ['base_url'],)
         # 初始化prompt模板
@@ -71,9 +71,9 @@ def extract_entities(docs):
 def store_in_neo4j(graph_docs, db_name='neo4j'):
     # 实体信息存入neo4j数据库
     neo4jGraph = Neo4jGraph(
-        url="bolt://localhost:7687",  # 数据库地址
-        username="neo4j",  # 数据库用户名
-        password="12345678",  # 数据库密码
+        url=os.environ['NEO4J_URI'],  # 数据库地址
+        username=os.environ['NEO4J_USERNAME'],  # 数据库用户名
+        password=os.environ['NEO4J_PASSWORD'],  # 数据库密码
         database=db_name  # 数据库名称
     )
     
@@ -86,9 +86,9 @@ def store_in_neo4j(graph_docs, db_name='neo4j'):
 def search_database():
     # 从neo4j数据库中查询数据
     neo4jGraph = Neo4jGraph(
-        url="bolt://localhost:7687",  # 数据库地址
-        username="neo4j",  # 数据库用户名
-        password="12345678",  # 数据库密码
+        url=os.environ['NEO4J_URI'],  # 数据库地址
+        username=os.environ['NEO4J_USERNAME'],  # 数据库用户名
+        password=os.environ['NEO4J_PASSWORD'],  # 数据库密码
         database="neo4j"  # 默认数据库名称
     )
 
@@ -99,9 +99,9 @@ def search_database():
 def create_database(db_name):
     # 创建neo4j数据库
     neo4jGraph = Neo4jGraph(
-        url="bolt://localhost:7687",  # 数据库地址
-        username="neo4j",  # 数据库用户名
-        password="12345678",  # 数据库密码
+        url=os.environ['NEO4J_URI'],  # 数据库地址
+        username=os.environ['NEO4J_USERNAME'],  # 数据库用户名
+        password=os.environ['NEO4J_PASSWORD'],  # 数据库密码
         database="neo4j"  # 默认数据库名称
     )
 
@@ -117,9 +117,9 @@ def create_database(db_name):
 def drop_database(db_name):
     # 创建neo4j数据库
     neo4jGraph = Neo4jGraph(
-        url="bolt://localhost:7687",  # 数据库地址
-        username="neo4j",  # 数据库用户名
-        password="12345678",  # 数据库密码
+        url=os.environ['NEO4J_URI'],  # 数据库地址
+        username=os.environ['NEO4J_USERNAME'],  # 数据库用户名
+        password=os.environ['NEO4J_PASSWORD'],  # 数据库密码
         database="neo4j"  # 默认数据库名称
     )
 
@@ -134,19 +134,35 @@ def drop_database(db_name):
 
     return db_name not in search_database()
 
+def reset_database(db_name):
+    # 从neo4j数据库中查询数据
+    neo4jGraph = Neo4jGraph(
+        url=os.environ['NEO4J_URI'],  # 数据库地址
+        username=os.environ['NEO4J_USERNAME'],  # 数据库用户名
+        password=os.environ['NEO4J_PASSWORD'],  # 数据库密码
+        database=db_name  # 默认数据库名称
+    )
+
+    neo4jGraph.query("match(n) detach delete (n);")
+
+    result = neo4jGraph.query("match(n) return n;")
+    return len(result) == 0
 
 if __name__ == '__main__':
 
-    # 查询所有数据库
-    lst = search_database()
-    print(lst)
+    # # 查询所有数据库
+    # lst = search_database()
+    # print(lst)
     
-    # 创建数据库
-    r = create_database('newdb')
-    if r:
-        print('数据库创建成功')
+    # # 创建数据库
+    # r = create_database('newdb')
+    # if r:
+    #     print('数据库创建成功')
 
-    # 删除数据库
-    r = drop_database('newdb')
-    if r:
-        print('数据库删除成功')
+    # # 删除数据库
+    # r = drop_database('newdb')
+    # if r:
+    #     print('数据库删除成功')
+
+    # 重置数据库记录
+    reset_database('food')
